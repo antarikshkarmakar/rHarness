@@ -69,6 +69,11 @@ rh run <task>                                # run the finish-first loop once an
 rh plugins                                   # list built-in plugins and their capabilities
 rh config                                    # print the effective configuration
 rh init                                      # write a sample rharness.json
+rh local list                                # list local-model profiles
+rh local status <id>                         # probe a local server's /models
+rh local start  <id> [--no-launch]           # start + wait for a local server
+rh local stop   <id>                         # stop a local server
+rh local test   <id>                         # send a test completion
 rh --help                                    # show help
 ```
 
@@ -154,19 +159,86 @@ control deck.
 
 ---
 
+## Local models (EXL3 / GGUF / NVFP4)
+
+rHarness is built to drive a **locally-served** model through its OpenAI-compatible endpoint.
+Any server that speaks `/v1/chat/completions` works — vLLM (EXL3 / NVFP4), Ollama / llama.cpp
+(GGUF), tabbyAPI, LM Studio, and so on. No custom API is required.
+
+Three profiles ship out of the box (see `src/core/localmodel.ts`):
+
+| id                 | recipe                                  | endpoint                       | model id                             |
+| ------------------ | --------------------------------------- | ------------------------------ | ------------------------------------ |
+| `glm53-exl3-spark` | [0xSero single-Spark 2.0bpw](https://github.com/0xSero/GLM-5.3-Flash-EXL3-2bpw-DGX-Spark) | `127.0.0.1:18080/v1` | `glm-5.3-flash-exl3-k2-single-spark` |
+| `glm53-exl3-2spark`| [MiaAI-Lab 2× Spark](https://github.com/MiaAI-Lab/GLM-5.3-Flash-EXL3-2x-DGX-Sparks) | `127.0.0.1:8888/v1`  | `GLM-5.3-Flash-EXL3`                |
+| `gguf-ollama`      | Ollama `/v1`                            | `127.0.0.1:11434/v1`           | *(your Ollama tag)*                  |
+
+### Manage a local server from the CLI
+
+```
+rh local list                       # show the built-in profiles
+rh local status <id>                # probe <id>/models and report running / latency
+rh local start  <id> [--no-launch]  # run the profile's `start` cmd, then poll until healthy
+rh local stop   <id>                # run the profile's `stop` cmd
+rh local test   <id>                # send a tiny completion and show the reply
+```
+
+Set `cwd` (and optionally `env`) on a profile to point at your recipe checkout. A profile with no
+`start` command is fine — launch the server yourself and rHarness simply talks to the endpoint.
+
+### Point the harness at a local model
+
+Local endpoints (`127.0.0.1`, `localhost`, …) need **no API key** — rHarness detects a local base
+URL and uses the OpenAI-compatible provider instead of the offline demo.
+
+```
+export RHA_BASE_URL=http://127.0.0.1:18080/v1
+export RHA_MODEL=glm-5.3-flash-exl3-k2-single-spark
+# RHA_API_KEY is not needed for a local endpoint
+```
+
+### GLM-5.3 thinking / reasoning knobs
+
+GLM-5.3 puts chain-of-thought in a `reasoning` field and accepts thinking controls in the request
+body. rHarness reads `reasoning` automatically (falling back to `content`) and forwards these:
+
+| Variable             | Purpose                                             |
+| -------------------- | --------------------------------------------------- |
+| `RHA_ENABLE_THINKING` | `true`/`false` → `chat_template_kwargs.enable_thinking` |
+| `RHA_REASONING_EFFORT`| `low` / `high` → `reasoning_effort`                |
+| `RHA_MAX_TOKENS`     | keep ≥ `32768` while thinking is on                 |
+
+### Web API
+
+The dashboard server exposes the same manager over JSON:
+
+```
+GET  /api/local                  # list profiles
+GET  /api/local/:id/status       # probe a server
+POST /api/local/:id/start        # start + wait for healthy
+POST /api/local/:id/stop         # stop
+POST /api/local/:id/test         # send a test completion
+```
+
+---
+
 ## Configuration
 
 Configuration is resolved from environment variables (see `.env.example`). **No real credentials are
-required** — with no `RHA_API_KEY` set, rHarness uses a deterministic offline `DemoProvider`.
+required** — with no `RHA_API_KEY` set *and* a non-local `RHA_BASE_URL`, rHarness uses a
+deterministic offline `DemoProvider`.
 
-| Variable          | Default                                   | Purpose                              |
-| ----------------- | ----------------------------------------- | ------------------------------------ |
-| `RHA_API_KEY`     | *(empty → demo mode)*                     | API key for an OpenAI-compatible provider |
-| `RHA_BASE_URL`    | `https://api.openai.com/v1`              | OpenAI-compatible endpoint           |
-| `RHA_MODEL`       | `gpt-4o-mini`                             | Model identifier                     |
-| `RHA_PORT`        | `4321`                                    | Web server port                      |
-| `RHA_HOST`        | `127.0.0.1`                               | Web server host                      |
-| `RHA_MEMORY_FILE` | `~/.rharness/memory.json`                 | Persistent store for the memory plugin |
+| Variable             | Default                                   | Purpose                              |
+| -------------------- | ----------------------------------------- | ------------------------------------ |
+| `RHA_API_KEY`        | *(empty → demo mode for remote endpoints)* | API key for an OpenAI-compatible provider |
+| `RHA_BASE_URL`       | `https://api.openai.com/v1`              | OpenAI-compatible endpoint (remote **or** local) |
+| `RHA_MODEL`          | `gpt-4o-mini`                             | Model identifier                     |
+| `RHA_MAX_TOKENS`     | `32768`                                   | Max completion tokens                |
+| `RHA_ENABLE_THINKING`| *(unset)*                                 | `chat_template_kwargs.enable_thinking` (GLM-5.3) |
+| `RHA_REASONING_EFFORT`| *(unset)*                                 | `low` / `high` → `reasoning_effort` (GLM-5.3) |
+| `RHA_PORT`           | `4321`                                    | Web server port                      |
+| `RHA_HOST`           | `127.0.0.1`                               | Web server host                      |
+| `RHA_MEMORY_FILE`    | `~/.rharness/memory.json`                 | Persistent store for the memory plugin |
 
 `rharness.json` holds the harness identity (name, tagline, loop, phases, plugins).
 

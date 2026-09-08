@@ -1,9 +1,10 @@
 /**
- * Mythos Harness — public SDK entry point.
+ * rHarness — public SDK entry point.
  */
 
 export * from "./types.js";
 export * from "./providers.js";
+export * from "./localmodel.js";
 export { createLoop, runFinishFirstLoop, newContext } from "./loop.js";
 export { createHarness, defaultConfig } from "./harness.js";
 

@@ -162,6 +162,17 @@ export interface ProviderConfig {
   model?: string;
   temperature?: number;
   max_tokens?: number;
+  /** Optional bearer key. Empty/absent is fine for unauthenticated local servers (vLLM, tabbyAPI). */
+  api_key?: string;
+  /**
+   * Extra top-level fields merged verbatim into every chat-completion request.
+   * Used for GLM-5.3-style chat templates, e.g. `{ chat_template_kwargs: { enable_thinking: false } }`.
+   */
+  extra_body?: Record<string, unknown>;
+  /** GLM-5.3: enable/disable thinking. Mapped into `chat_template_kwargs.enable_thinking`. */
+  enable_thinking?: boolean;
+  /** GLM-5.3: `low` | `high` (or unset = Max). Sent as top-level `reasoning_effort`. */
+  reasoning_effort?: "low" | "high";
 }
 
 export interface Harness {

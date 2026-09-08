@@ -8,6 +8,7 @@
  *   rh plugins                                   List built-in plugins
  *   rh config                                    Print the effective config
  *   rh init                                      Write a sample rharness.json
+ *   rh local list|status|start|stop|test         Manage local model servers
  *   rh --help                                    Show help
  */
 
@@ -15,6 +16,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { createServer } from "./web/server.js";
 import { createHarness, registerBuiltinPlugins, defaultConfig } from "./core/index.js";
+import { createLocalModelManager } from "./core/localmodel.js";
 
 const argv = process.argv.slice(2);
 const cmd = argv[0] ?? "serve";
@@ -29,6 +31,11 @@ Usage:
   rh plugins
   rh config
   rh init
+  rh local list
+  rh local status <profile-id>
+  rh local start <profile-id> [--no-launch]
+  rh local stop <profile-id>
+  rh local test <profile-id>
   rh --help
 
 Environment:
@@ -82,6 +89,87 @@ async function main(): Promise<void> {
     cfg.provider = { ...cfg.provider };
     console.log(JSON.stringify(cfg, null, 2));
     return;
+  }
+
+  if (cmd === "local") {
+    const sub = argv[1];
+    const mgr = createLocalModelManager();
+    if (!sub || sub === "list") {
+      console.log("Local model profiles:\n");
+      for (const p of mgr.list()) {
+        console.log(`  ${p.id.padEnd(22)} ${p.name}`);
+        console.log(`     format : ${p.format}`);
+        console.log(`     base   : ${p.base_url}`);
+        console.log(`     model  : ${p.model}`);
+        if (p.start) console.log(`     start  : ${p.start}`);
+        if (p.stop) console.log(`     stop   : ${p.stop}`);
+        if (p.notes) console.log(`     ${p.notes}`);
+        console.log("");
+      }
+      console.log("  rh local status|start|stop|test <id>");
+      return;
+    }
+
+    const id = argv[2];
+    if (!id) {
+      console.error(`Usage: rh local ${sub} <profile-id>`);
+      console.error("Run `rh local list` to see available profiles.");
+      process.exit(1);
+    }
+
+    if (sub === "status") {
+      const s = await mgr.status(id);
+      if (s.running) {
+        console.log(`✓ ${s.base_url}  (${s.latency_ms ?? "?"} ms)`);
+        if (s.models?.length) console.log(`  models: ${s.models.join(", ")}`);
+      } else {
+        console.log(`✗ ${s.base_url}  — ${s.error ?? "not running"}`);
+        process.exit(1);
+      }
+      return;
+    }
+
+    if (sub === "start") {
+      const noLaunch = argv.includes("--no-launch");
+      console.log(`Starting local server for "${id}"…`);
+      const r = await mgr.start(id, { launch: !noLaunch });
+      if (r.ok) {
+        console.log(`✓ Server is up: ${r.status.base_url}`);
+        if (r.status.models?.length) console.log(`  models: ${r.status.models.join(", ")}`);
+      } else {
+        console.log(`✗ ${r.error ?? "failed to start"}`);
+        if (r.launched?.stderr) console.log(r.launched.stderr.slice(0, 500));
+        process.exit(1);
+      }
+      return;
+    }
+
+    if (sub === "stop") {
+      const r = await mgr.stop(id);
+      if (r.ok) console.log(`✓ Stopped "${id}"`);
+      else {
+        console.log(`✗ ${r.error ?? "failed to stop"}`);
+        process.exit(1);
+      }
+      return;
+    }
+
+    if (sub === "test") {
+      console.log(`Sending test completion to "${id}"…`);
+      const r = await mgr.test(id);
+      if (r.ok) {
+        console.log(`✓ ${r.latency_ms} ms — model: ${r.model}`);
+        console.log(`  reply: ${r.reply?.slice(0, 200)}`);
+      } else {
+        console.log(`✗ ${r.error ?? "test failed"}`);
+        process.exit(1);
+      }
+      return;
+    }
+
+    console.error(`Unknown subcommand: ${sub}`);
+    console.error("Available: list, status, start, stop, test");
+    process.exit(1);
   }
 
   if (cmd === "init") {

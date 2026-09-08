@@ -1,5 +1,5 @@
 /**
- * Mythos Harness — local web server.
+ * rHarness — local web server.
  *
  * Endpoints:
  *   GET  /                  → launch page (assets/index.html)
@@ -12,6 +12,11 @@
  *   GET  /api/plugins       → list plugins
  *   POST /api/plugins       → { id, enabled }  enable/disable a plugin
  *   POST /api/runs/:id/cancel → abort a running task (best-effort)
+ *   GET  /api/local         → list local model profiles
+ *   GET  /api/local/:id/status → probe a local server
+ *   POST /api/local/:id/start  → start + wait for a local server
+ *   POST /api/local/:id/stop   → stop a local server
+ *   POST /api/local/:id/test   → send a test completion
  *
  * The server is intentionally tiny: one Bun.serve call, no framework,
  * and the UI is plain HTML + CSS + JS served from ./assets.
@@ -21,6 +26,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as fs from "node:fs";
 import { createHarness, registerBuiltinPlugins, defaultConfig, type Harness } from "../core/index.js";
+import { createLocalModelManager } from "../core/localmodel.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ASSETS_DIR = path.resolve(__dirname, "..", "..", "assets");
@@ -37,6 +43,8 @@ export function createServer(options: ServerOptions = {}) {
 
   const harness: Harness = createHarness({ config });
   registerBuiltinPlugins(harness.registry);
+
+  const localModels = createLocalModelManager();
 
   const controllers = new Map<string, AbortController>();
 
@@ -171,6 +179,64 @@ export function createServer(options: ServerOptions = {}) {
     if (url.pathname.startsWith("/static/")) {
       const rel = url.pathname.slice("/static/".length);
       return file(rel);
+    }
+
+    // --- Local model profiles -------------------------------------------------
+    if (url.pathname === "/api/local" && req.method === "GET") {
+      return json({ profiles: localModels.list() });
+    }
+
+    const localStatus = url.pathname.match(/^\/api\/local\/([^/]+)\/status$/);
+    if (localStatus && req.method === "GET") {
+      const id = decodeURIComponent(localStatus[1]!);
+      try {
+        return json(await localModels.status(id));
+      } catch (err) {
+        return json({ ok: false, error: err instanceof Error ? err.message : String(err) }, 404);
+      }
+    }
+
+    const localStart = url.pathname.match(/^\/api\/local\/([^/]+)\/start$/);
+    if (localStart && req.method === "POST") {
+      const id = decodeURIComponent(localStart[1]!);
+      const body = (await req.json().catch(() => ({}))) as { timeout_ms?: number; poll_ms?: number; launch?: boolean };
+      try {
+        const r = await localModels.start(id, {
+          timeoutMs: body.timeout_ms,
+          pollMs: body.poll_ms,
+          launch: body.launch,
+        });
+        return json(r, r.ok ? 200 : 502);
+      } catch (err) {
+        return json({ ok: false, error: err instanceof Error ? err.message : String(err) }, 404);
+      }
+    }
+
+    const localStop = url.pathname.match(/^\/api\/local\/([^/]+)\/stop$/);
+    if (localStop && req.method === "POST") {
+      const id = decodeURIComponent(localStop[1]!);
+      try {
+        const r = await localModels.stop(id);
+        return json(r, r.ok ? 200 : 502);
+      } catch (err) {
+        return json({ ok: false, error: err instanceof Error ? err.message : String(err) }, 404);
+      }
+    }
+
+    const localTest = url.pathname.match(/^\/api\/local\/([^/]+)\/test$/);
+    if (localTest && req.method === "POST") {
+      const id = decodeURIComponent(localTest[1]!);
+      const body = (await req.json().catch(() => ({}))) as { prompt?: string; max_tokens?: number; timeout_ms?: number };
+      try {
+        const r = await localModels.test(id, {
+          prompt: body.prompt,
+          max_tokens: body.max_tokens,
+          timeoutMs: body.timeout_ms,
+        });
+        return json(r, r.ok ? 200 : 502);
+      } catch (err) {
+        return json({ ok: false, error: err instanceof Error ? err.message : String(err) }, 404);
+      }
     }
 
     if (url.pathname === "/") {

@@ -1,14 +1,18 @@
 /**
- * Mythos Harness — LLM provider abstraction.
+ * rHarness — LLM provider abstraction.
  *
  * We deliberately support:
- *  1. Any OpenAI-compatible HTTP endpoint (OpenAI, OpenRouter, vLLM,
- *     LM Studio, Ollama /v1, DeepSeek, Together, Groq, localAI, ...).
- *  2. A demo mode that returns a deterministic response so the harness
- *     works end-to-end without credentials.
+ *  1. Any OpenAI-compatible HTTP endpoint — including **locally-served models**:
+ *     vLLM / tabbyAPI serving EXL3 weights, llama.cpp / Ollama / LM Studio serving
+ *     GGUF, and NVFP4 checkpoints. These are all driven through the same
+ *     `/v1/chat/completions` surface and typically need no API key.
+ *  2. Cloud OpenAI-compatible endpoints (OpenAI, OpenRouter, DeepSeek, Together,
+ *     Groq, ...) via an API key.
+ *  3. A demo mode that returns a deterministic response so the harness works
+ *     end-to-end without any model.
  *
- * No API key is required to use the harness; set RHA_API_KEY (or
- * OPENAI_API_KEY) to talk to a real model.
+ * No API key is required for a local endpoint. For GLM-5.3-style chat templates
+ * (thinking toggle, `reasoning` field) see `buildRequestBody` / `ChatCompletion.reasoning`.
  */
 
 import type { ConversationMessage, ProviderConfig } from "./types.js";
@@ -18,6 +22,8 @@ export interface ChatCompletion {
   model: string;
   usage?: { prompt_tokens?: number; completion_tokens?: number };
   finish_reason?: string;
+  /** Chain-of-thought (GLM-5.3 `reasoning`). Absent for non-reasoning models. */
+  reasoning?: string;
 }
 
 export interface Provider {
@@ -63,8 +69,16 @@ export function buildProvider(config?: Partial<ProviderConfig>): Provider {
   const model = config?.model ?? pickModel();
   const temperature = config?.temperature ?? 0.2;
   const max_tokens = config?.max_tokens ?? 1024;
+  const api_key = config?.api_key ?? pickKey();
+  const extra_body = config?.extra_body;
+  const reasoning_effort = config?.reasoning_effort;
+  const enable_thinking = config?.enable_thinking;
 
-  if (kind === "demo" || !pickKey()) {
+  // A local/unauthenticated endpoint (vLLM, tabbyAPI, Ollama) has no key.
+  // If a base_url points at a local host and no key is configured, we still
+  // use the OpenAI-compatible provider rather than silently dropping to demo.
+  const looksLocal = /^(127\.|localhost|0\.0\.0\.0|\[::1\])/.test(base_url.replace(/^https?:\/\//, ""));
+  if (kind === "demo" || (!api_key && !looksLocal)) {
     return new DemoProvider(model);
   }
 
@@ -73,6 +87,10 @@ export function buildProvider(config?: Partial<ProviderConfig>): Provider {
     model,
     temperature,
     max_tokens,
+    api_key,
+    extra_body,
+    reasoning_effort,
+    enable_thinking,
   });
 }
 
@@ -119,6 +137,52 @@ interface OpenAICompatibleOptions {
   model: string;
   temperature: number;
   max_tokens: number;
+  api_key?: string;
+  extra_body?: Record<string, unknown>;
+  reasoning_effort?: "low" | "high";
+  /** GLM-5.3-style thinking toggle → `chat_template_kwargs.enable_thinking`. */
+  enable_thinking?: boolean;
+}
+
+/**
+ * Build the request body shared by chat() and stream().
+ *
+ * Handles the GLM-5.3-style chat template: when `enable_thinking` is set (from
+ * config or env) it is folded into `chat_template_kwargs` so the local server
+ * can disable/enable reasoning. `extra_body` fields are merged verbatim and win
+ * over the computed defaults.
+ */
+function buildRequestBody(
+  opts: OpenAICompatibleOptions,
+  messages: ConversationMessage[],
+  per: { temperature?: number; max_tokens?: number; stream: boolean },
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model: opts.model,
+    messages: normalizeMessages(messages),
+    temperature: per.temperature ?? opts.temperature,
+    max_tokens: per.max_tokens ?? opts.max_tokens,
+    stream: per.stream,
+  };
+  if (opts.reasoning_effort) body.reasoning_effort = opts.reasoning_effort;
+
+  // Fold enable_thinking into chat_template_kwargs (GLM-5.3 chat template reads it there).
+  // Priority: provider config value (from defaultConfig / .env) → RHA_ENABLE_THINKING env.
+  const envThinking = process.env.RHA_ENABLE_THINKING;
+  const enableThinking =
+    opts.enable_thinking !== undefined
+      ? opts.enable_thinking
+      : envThinking !== undefined && envThinking !== ""
+        ? envThinking === "1" || envThinking.toLowerCase() === "true"
+        : undefined;
+  const mergedChatTemplate: Record<string, unknown> = {
+    ...((opts.extra_body?.chat_template_kwargs as Record<string, unknown>) ?? {}),
+  };
+  if (enableThinking !== undefined) mergedChatTemplate.enable_thinking = enableThinking;
+  const extraBody = { ...(opts.extra_body ?? {}) };
+  if (Object.keys(mergedChatTemplate).length > 0) extraBody.chat_template_kwargs = mergedChatTemplate;
+  Object.assign(body, extraBody);
+  return body;
 }
 
 class OpenAICompatibleProvider implements Provider {
@@ -130,11 +194,25 @@ class OpenAICompatibleProvider implements Provider {
   }
 
   private headers(): Record<string, string> {
-    const key = pickKey();
+    const key = this.opts.api_key ?? pickKey();
     return {
       "content-type": "application/json",
-      authorization: key ? `Bearer ${key}` : "",
+      ...(key ? { authorization: `Bearer ${key}` } : {}),
     };
+  }
+
+  /**
+   * Extract assistant text from a (non-stream) message. GLM-5.3 models may put
+   * the answer in `content` and the chain-of-thought in `reasoning`; we surface
+   * both but prefer non-empty `content`, falling back to `reasoning`.
+   */
+  private readMessage(message?: { content?: string; reasoning?: string; reasoning_content?: string }): {
+    content: string;
+    reasoning: string;
+  } {
+    const reasoning = message?.reasoning ?? message?.reasoning_content ?? "";
+    const content = message?.content ?? "";
+    return { content: content || reasoning, reasoning };
   }
 
   async chat(
@@ -144,13 +222,7 @@ class OpenAICompatibleProvider implements Provider {
     const res = await fetch(`${this.opts.base_url}/chat/completions`, {
       method: "POST",
       headers: this.headers(),
-      body: JSON.stringify({
-        model: this.opts.model,
-        messages: normalizeMessages(messages),
-        temperature: opts?.temperature ?? this.opts.temperature,
-        max_tokens: opts?.max_tokens ?? this.opts.max_tokens,
-        stream: false,
-      }),
+      body: JSON.stringify(buildRequestBody(this.opts, messages, { ...opts, stream: false })),
       signal: opts?.signal,
     });
 
@@ -160,17 +232,18 @@ class OpenAICompatibleProvider implements Provider {
     }
 
     const data = (await res.json()) as {
-      choices?: { message?: { content?: string }; finish_reason?: string }[];
+      choices?: { message?: { content?: string; reasoning?: string; reasoning_content?: string }; finish_reason?: string }[];
       usage?: { prompt_tokens?: number; completion_tokens?: number };
       model?: string;
     };
-    const content = data.choices?.[0]?.message?.content ?? "";
+    const { content, reasoning } = this.readMessage(data.choices?.[0]?.message);
     return {
       content,
       model: data.model ?? this.opts.model,
       usage: data.usage,
       finish_reason: data.choices?.[0]?.finish_reason,
-    };
+      ...(reasoning ? { reasoning } : {}),
+    } as ChatCompletion;
   }
 
   async stream(
@@ -181,13 +254,7 @@ class OpenAICompatibleProvider implements Provider {
     const res = await fetch(`${this.opts.base_url}/chat/completions`, {
       method: "POST",
       headers: { ...this.headers(), accept: "text/event-stream" },
-      body: JSON.stringify({
-        model: this.opts.model,
-        messages: normalizeMessages(messages),
-        temperature: opts?.temperature ?? this.opts.temperature,
-        max_tokens: opts?.max_tokens ?? this.opts.max_tokens,
-        stream: true,
-      }),
+      body: JSON.stringify(buildRequestBody(this.opts, messages, { ...opts, stream: true })),
       signal: opts?.signal,
     });
 
@@ -201,6 +268,7 @@ class OpenAICompatibleProvider implements Provider {
     const decoder = new TextDecoder("utf-8");
     let buf = "";
     let full = "";
+    let reasoning = "";
     let finish_reason: string | undefined;
     let model = this.opts.model;
 
@@ -218,13 +286,19 @@ class OpenAICompatibleProvider implements Provider {
         try {
           const json = JSON.parse(payload) as {
             model?: string;
-            choices?: { delta?: { content?: string }; finish_reason?: string }[];
+            choices?: {
+              delta?: { content?: string; reasoning?: string; reasoning_content?: string };
+              finish_reason?: string;
+            }[];
           };
           if (json.model) model = json.model;
-          const delta = json.choices?.[0]?.delta?.content ?? "";
-          if (delta) {
-            full += delta;
-            onDelta(delta);
+          const delta = json.choices?.[0]?.delta;
+          const contentDelta = delta?.content ?? "";
+          const reasoningDelta = delta?.reasoning ?? delta?.reasoning_content ?? "";
+          if (reasoningDelta) reasoning += reasoningDelta;
+          if (contentDelta) {
+            full += contentDelta;
+            onDelta(contentDelta);
           }
           if (json.choices?.[0]?.finish_reason) finish_reason = json.choices[0].finish_reason;
         } catch {
@@ -233,6 +307,11 @@ class OpenAICompatibleProvider implements Provider {
       }
     }
 
-    return { content: full, model, finish_reason };
+    return {
+      content: full || reasoning,
+      model,
+      finish_reason,
+      ...(reasoning ? { reasoning } : {}),
+    } as ChatCompletion;
   }
 }

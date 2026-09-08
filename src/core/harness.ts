@@ -42,11 +42,19 @@ export function defaultConfig(): HarnessConfig {
       max_retries: 3,
     },
     provider: {
-      kind: process.env.RHA_API_KEY || process.env.OPENAI_API_KEY ? "openai-compatible" : "demo",
+      kind: "openai-compatible",
       base_url: process.env.RHA_BASE_URL || process.env.OPENAI_BASE_URL,
       model: process.env.RHA_MODEL || process.env.OPENAI_MODEL,
       temperature: 0.2,
-      max_tokens: 1024,
+      // GLM-5.3-style long-context reasoning runs well past 8k tokens; keep the
+      // cap high enough that it is not truncated mid-thought.
+      max_tokens: Number(process.env.RHA_MAX_TOKENS || 32768),
+      api_key: process.env.RHA_API_KEY || process.env.OPENAI_API_KEY,
+      enable_thinking:
+        process.env.RHA_ENABLE_THINKING !== undefined
+          ? process.env.RHA_ENABLE_THINKING === "1" || process.env.RHA_ENABLE_THINKING.toLowerCase() === "true"
+          : undefined,
+      reasoning_effort: (process.env.RHA_REASONING_EFFORT as "low" | "high" | undefined) || undefined,
     },
   };
 }

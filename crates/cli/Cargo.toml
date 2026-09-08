@@ -1,0 +1,32 @@
+[package]
+name = "mythos-harness-cli"
+version = "1.0.0"
+edition = "2021"
+description = "CLI for rHarness"
+license = "MIT"
+
+[[bin]]
+name = "mythos"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { version = "1.0", workspace = true }
+clap = { version = "4.5", features = ["derive", "env"], workspace = true }
+config = { version = "0.14", features = ["toml"], workspace = true }
+directories = { version = "5.0", workspace = true }
+serde = { version = "1.0", features = ["derive"], workspace = true }
+serde_json = { version = "1.0", workspace = true }
+serde_yaml = { version = "0.9", workspace = true }
+tokio = { version = "1.40", features = ["full"], workspace = true }
+toml = { version = "0.8", workspace = true }
+tracing = { version = "0.1", workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"], workspace = true }
+uuid = { version = "1.8", features = ["v4", "serde", "fast-rng"], workspace = true }
+
+mythos-harness-core = { path = "../core" }
+mythos-harness-plugins = { path = "../plugins" }
+mythos-harness-agents = { path = "../agents" }
+
+[dev-dependencies]
+tokio-test = { version = "0.4", workspace = true }
+tempfile = { version = "3.10", workspace = true }

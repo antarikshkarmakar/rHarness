@@ -1,0 +1,26 @@
+[package]
+name = "mythos-harness-core"
+version = "1.0.0"
+edition = "2021"
+description = "Core engine for rHarness - finish-first autonomous agent loop"
+license = "MIT"
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+futures = { workspace = true }
+parking_lot = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+
+# Workspace dependencies
+# (core does not depend on plugins or agents - it defines the traits they implement)
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.13"

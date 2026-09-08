@@ -1,0 +1,13 @@
+{
+  "name": "rHarness",
+  "version": "1.0.0",
+  "tagline": "Finish First.",
+  "description": "A finish-first autonomous agent loop and an open, plugin-based agent harness. Define intent, run the loop, ship the result.",
+  "core": "./dist/core.js",
+  "loop": "finish-first",
+  "engine": "harness-core",
+  "license": "MIT",
+  "homepage": "https://example.com/rharness",
+  "phases": [ "Interrogate", "Contract", "Execute", "Finish" ],
+  "plugins": [ "web-search", "filesystem", "shell", "memory", "code-executor" ]
+}

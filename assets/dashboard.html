@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rHarness — Control Deck</title>
+  <meta name="description" content="rHarness — a finish-first autonomous agent loop. Chat with the agent and manage plugins from one local control deck." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0b14'/%3E%3Cpath d='M11 22V10c0-1.6 1.4-2.8 3.2-2.8h3' stroke='%235eead4' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- ── Top bar ─────────────────────────────────────────── -->
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-mark">
+          <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="none" stroke="var(--teal)" stroke-width="2"/>
+            <path d="M11 22V10c0-1.6 1.4-2.8 3.2-2.8h3" stroke="var(--teal)" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <strong>rHarness</strong>
+          <em id="provider-badge" class="badge">connecting…</em>
+        </span>
+      </a>
+
+      <nav class="tabs" role="tablist" aria-label="Views">
+        <button class="tab active" data-tab="chat" role="tab" aria-selected="true">Agent</button>
+        <button class="tab" data-tab="plugins" role="tab" aria-selected="false">Plugins</button>
+        <button class="tab" data-tab="runs" role="tab" aria-selected="false">Runs</button>
+      </nav>
+
+      <div class="topbar-right">
+        <span id="health-dot" class="health-dot" title="Server status"></span>
+        <a class="btn btn-ghost btn-sm" href="/">Launch page</a>
+      </div>
+    </header>
+
+    <!-- ── Main ────────────────────────────────────────────── -->
+    <main class="main">
+      <!-- CHAT VIEW -->
+      <section class="view active" id="view-chat" role="tabpanel">
+        <div class="chat-shell">
+          <div class="chat-log" id="chat-log" aria-live="polite">
+            <div class="msg msg-system">
+              <div class="msg-avatar">r</div>
+              <div class="msg-body">
+                <div class="msg-name">rHarness</div>
+                <p class="msg-text">
+                  Finish First. I work in four phases — <b>Interrogate → Contract → Execute → Finish</b> —
+                  and I loop until the task is actually done. Tell me what to ship.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="composer">
+            <textarea
+              id="chat-input"
+              class="composer-input"
+              rows="2"
+              placeholder="Describe the task… e.g. 'Summarize this repo and write a one-paragraph pitch for it' (Enter to send, Shift+Enter for newline)"
+              aria-label="Message the agent"
+            ></textarea>
+            <div class="composer-actions">
+              <span class="composer-hint" id="composer-hint">Enter ↵ quick reply · Shift+Enter newline</span>
+              <button class="btn btn-ghost" id="stop-btn" type="button" disabled>Stop</button>
+              <button class="btn" id="run-btn" type="button" title="Kick off a full finish-first loop on the task">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l8 5v8l-8 5-8-5V8l8-5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 8v8M8.5 12H12M12 12l3.5 0" stroke="currentColor" stroke-width="1.5"/></svg>
+                Run task
+              </button>
+              <button class="btn btn-primary" id="send-btn" type="button">
+                <span>Send</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PLUGINS VIEW -->
+      <section class="view" id="view-plugins" role="tabpanel">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Plugins</h2>
+              <p class="muted">Toggle which capabilities the agent can use. Changes apply immediately to the running harness.</p>
+            </div>
+            <span class="muted" id="plugin-count"></span>
+          </div>
+          <div class="plugin-list" id="plugin-list">
+            <div class="empty-state">Loading plugins…</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RUNS VIEW -->
+      <section class="view" id="view-runs" role="tabpanel">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Runs</h2>
+              <p class="muted">Recent finish-first loops and their outcomes.</p>
+            </div>
+          </div>
+          <div class="run-list" id="run-list">
+            <div class="empty-state">No runs yet — send a message in the Agent tab.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ── Footer ──────────────────────────────────────────── -->
+    <footer class="footer">
+      <span class="muted">rHarness · finish-first loop · local-first · MIT</span>
+    </footer>
+  </div>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

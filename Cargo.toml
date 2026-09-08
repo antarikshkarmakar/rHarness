@@ -1,0 +1,96 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/plugins",
+    "crates/agents",
+    "crates/web",
+    "crates/cli",
+]
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+async-trait = "0.1"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# CLI
+clap = { version = "4.5", features = ["derive", "env"] }
+
+# HTTP client for web search and APIs
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "blocking"] }
+
+# File system operations (part of tokio)
+walkdir = "2.5"
+
+# Shell command execution (part of tokio with "process" feature)
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Configuration
+config = { version = "0.14", features = ["toml"] }
+directories = "5.0"
+
+# Web UI (optional)
+axum = { version = "0.7", features = ["macros", "json", "ws"] }
+tower-http = { version = "0.5", features = ["cors", "trace", "fs"] }
+tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
+
+# Memory/storage
+sqlite = { version = "0.37", features = ["bundled"] }
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "migrate"] }
+
+# Code execution sandbox
+nix = { version = "0.28", features = ["user"] }
+
+# UUID generation
+uuid = { version = "1.8", features = ["v4", "serde", "fast-rng"] }
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Async utilities
+futures = "0.3"
+
+# Random
+rand = "0.9"
+
+# HTML parsing for web search
+scraper = "0.19"
+
+# Glob pattern matching
+glob = "0.3"
+
+# YAML serialization
+serde_yaml = "0.9"
+
+# Synchronization
+parking_lot = "0.12"
+dashmap = "5.5"
+tokio-stream = "0.1"
+
+# Testing
+mockall = "0.13"
+tokio-test = "0.4"
+tempfile = "3.10"
+
+[workspace.dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.13"
+tempfile = "3.10"
+serial_test = "3.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

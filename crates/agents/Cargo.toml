@@ -1,0 +1,25 @@
+[package]
+name = "mythos-harness-agents"
+version = "1.0.0"
+edition = "2021"
+description = "Agent implementations for rHarness"
+license = "MIT"
+
+[dependencies]
+anyhow = { version = "1.0", workspace = true }
+async-trait = { version = "0.1", workspace = true }
+chrono = { version = "0.4", features = ["serde"], workspace = true }
+futures = { version = "0.3", workspace = true }
+rand = { version = "0.9", workspace = true }
+serde = { version = "1.0", features = ["derive"], workspace = true }
+serde_json = { version = "1.0", workspace = true }
+tokio = { version = "1.40", features = ["time"], workspace = true }
+tracing = { version = "0.1", workspace = true }
+uuid = { version = "1.8", features = ["v4", "serde", "fast-rng"], workspace = true }
+
+mythos-harness-core = { path = "../core" }
+mythos-harness-plugins = { path = "../plugins" }
+
+[dev-dependencies]
+tokio-test = { version = "0.4", workspace = true }
+mockall = { version = "0.13", workspace = true }

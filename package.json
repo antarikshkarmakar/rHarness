@@ -1,0 +1,42 @@
+{
+  "name": "rharness",
+  "version": "1.0.0",
+  "private": true,
+  "description": "rHarness — a finish-first autonomous agent loop and an open, plugin-based AI agent harness with a local web UI.",
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "bun": ">=1.1.0",
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "rh": "src/cli.ts"
+  },
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "serve": "bun src/cli.ts serve",
+    "dev:node": "node --import tsx --watch src/index.ts",
+    "rh": "bun src/cli.ts",
+    "build": "bun build src/index.ts --outdir dist --target node --minify --sourcemap",
+    "serve:bun": "bun dist/index.js",
+    "typecheck": "bunx tsc --noEmit",
+    "test": "bun test"
+  },
+  "keywords": [
+    "ai-agent",
+    "agent-harness",
+    "autonomous",
+    "finish-first",
+    "plugin-system",
+    "llm",
+    "rharness",
+    "harness"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "bun-types": "latest",
+    "typescript": "^5.9.3"
+  }
+}

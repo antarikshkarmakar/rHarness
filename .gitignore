@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+target/
+coverage/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local
+*.log
+.bun/
+tmp/
+RH_DATA/
+RH_MEMORY/

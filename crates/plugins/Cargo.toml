@@ -1,0 +1,31 @@
+[package]
+name = "mythos-harness-plugins"
+version = "1.0.0"
+edition = "2021"
+description = "Built-in plugins for rHarness"
+license = "MIT"
+
+[dependencies]
+anyhow = { version = "1.0", workspace = true }
+async-trait = { version = "0.1", workspace = true }
+chrono = { version = "0.4", features = ["serde"], workspace = true }
+futures = { version = "0.3", workspace = true }
+glob = { version = "0.3", workspace = true }
+rand = { version = "0.9", workspace = true }
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], workspace = true }
+scraper = { version = "0.19", workspace = true }
+serde = { version = "1.0", features = ["derive"], workspace = true }
+serde_json = { version = "1.0", workspace = true }
+tokio = { version = "1.40", features = ["process", "fs", "time"], workspace = true }
+tracing = { version = "0.1", workspace = true }
+uuid = { version = "1.8", features = ["v4", "serde", "fast-rng"], workspace = true }
+walkdir = { version = "2.5", workspace = true }
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "migrate"], workspace = true }
+directories = { version = "5.0", workspace = true }
+
+mythos-harness-core = { path = "../core" }
+
+[dev-dependencies]
+tokio-test = { version = "0.4", workspace = true }
+mockall = { version = "0.13", workspace = true }
+tempfile = { version = "3.10", workspace = true }

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rHarness — Finish First.</title>
+  <meta name="description" content="rHarness is an open, plugin-based AI agent harness. A finish-first loop: Interrogate → Contract → Execute → Finish — that keeps going until the work is actually done." />
+  <meta property="og:title" content="rHarness — Finish First." />
+  <meta property="og:description" content="An open, plugin-based AI agent harness with a finish-first autonomous loop and a local web control deck." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/launch.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0b14'/%3E%3Cpath d='M11 22V10c0-1.6 1.4-2.8 3.2-2.8h3' stroke='%235eead4' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="bg" aria-hidden="true"></div>
+
+  <!-- ── NAV ─────────────────────────────────────────── -->
+  <nav class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top" aria-label="rHarness home">
+        <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="none" stroke="#5eead4" stroke-width="2"/>
+          <path d="M11 22V10c0-1.6 1.4-2.8 3.2-2.8h3" stroke="#5eead4" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        rHarness
+      </a>
+      <div class="nav-links">
+        <a href="#what">What it is</a>
+        <a href="#phases">Phases</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#use-cases">Use cases</a>
+      </div>
+      <a class="btn btn-primary nav-cta" href="/dashboard">Open the app →</a>
+    </div>
+  </nav>
+
+  <main id="top">
+    <!-- ── HERO ──────────────────────────────────────── -->
+    <header class="hero">
+      <div class="wrap">
+        <span class="eyebrow"><span class="pulse"></span> Open · Local-first · Plugin-based</span>
+        <h1>Finish<span class="accent">First</span>.</h1>
+        <p class="sub">
+          rHarness is an AI agent that refuses to half-finish. It runs a <b>finish-first loop</b> —
+          interrogate the task, sign a contract, execute, then verify — and keeps looping until the work
+          is <b>actually done</b>, not just described.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" href="/dashboard">Launch the control deck →</a>
+          <a class="btn btn-ghost btn-lg" href="#what">See how it works</a>
+        </div>
+        <div class="hero-meta">
+          <div class="stat"><b>4</b><span>phases per cycle</span></div>
+          <div class="stat"><b>5</b><span>built-in plugins</span></div>
+          <div class="stat"><b>∞</b><span>loops until done</span></div>
+          <div class="stat"><b>MIT</b><span>open license</span></div>
+        </div>
+
+        <!-- ── PREVIEW: the finish-first loop ── -->
+        <div class="preview reveal">
+          <svg class="loop-svg" viewBox="0 0 720 260" role="img" aria-label="The finish-first loop: Interrogate, Contract, Execute, Finish, looping back when not done">
+            <defs>
+              <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#a78bfa"/>
+              </linearGradient>
+            </defs>
+
+            <!-- loop path -->
+            <path class="loop-arc" d="M120 130 C 120 50, 300 40, 360 95 C 420 40, 600 50, 600 130 C 600 205, 420 215, 360 165 C 300 215, 120 205, 120 130 Z"
+                  fill="none" stroke="url(#ring)" stroke-width="2.5"/>
+
+            <!-- nodes -->
+            <g class="loop-node">
+              <circle cx="120" cy="130" r="34" fill="rgba(94,234,212,0.12)" stroke="#5eead4" stroke-width="1.5"/>
+              <text x="120" y="126" text-anchor="middle" font-family="Space Grotesk" font-size="13" fill="#eef1f9">Interrogate</text>
+              <text x="120" y="143" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#5eead4">01</text>
+            </g>
+            <g class="loop-node">
+              <circle cx="360" cy="95" r="34" fill="rgba(167,139,250,0.12)" stroke="#a78bfa" stroke-width="1.5"/>
+              <text x="360" y="91" text-anchor="middle" font-family="Space Grotesk" font-size="13" fill="#eef1f9">Contract</text>
+              <text x="360" y="108" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#a78bfa">02</text>
+            </g>
+            <g class="loop-node">
+              <circle cx="600" cy="130" r="34" fill="rgba(251,191,36,0.12)" stroke="#fbbf24" stroke-width="1.5"/>
+              <text x="600" y="126" text-anchor="middle" font-family="Space Grotesk" font-size="13" fill="#eef1f9">Execute</text>
+              <text x="600" y="143" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#fbbf24">03</text>
+            </g>
+            <g class="loop-node">
+              <circle cx="360" cy="165" r="34" fill="rgba(52,211,153,0.12)" stroke="#34d399" stroke-width="1.5"/>
+              <text x="360" y="161" text-anchor="middle" font-family="Space Grotesk" font-size="13" fill="#eef1f9">Finish</text>
+              <text x="360" y="178" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#34d399">04</text>
+            </g>
+
+            <!-- center -->
+            <text x="360" y="128" text-anchor="middle" font-family="Space Grotesk" font-weight="700" font-size="20" fill="#eef1f9">until done</text>
+          </svg>
+          <p class="loop-label">The loop repeats Interrogate → Contract → Execute → Finish until success criteria are met.</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── WHAT IT IS ────────────────────────────────── -->
+    <section class="section" id="what">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <div class="sec-kicker">What it is</div>
+          <h2>Not a chatbot. A harness that finishes.</h2>
+          <p>Most agents talk about the work. rHarness closes the loop on it — with a clear contract, real execution through plugins, and a Finish phase that checks the work actually happened before it stops.</p>
+        </div>
+        <div class="grid grid-3">
+          <div class="card reveal">
+            <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V7l7-4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+            <h3>Finish-first by design</h3>
+            <p>The loop's job is completion. It re-enters the cycle with more context until the success criteria are genuinely met — or it tells you honestly that it can't be done yet.</p>
+          </div>
+          <div class="card reveal">
+            <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M9 9h6v6H9z" stroke="currentColor" stroke-width="1.8"/></svg></div>
+            <h3>Plugin-based, extensible</h3>
+            <p>Every capability — filesystem, shell, memory, web search, code execution — is a plugin that plugs into specific phases. Add your own and the loop immediately has new hands.</p>
+          </div>
+          <div class="card reveal">
+            <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <h3>Local-first, open</h3>
+            <p>Runs on your machine with a single command. Bring your own model key, or run in demo mode to see the whole pipeline. Everything is MIT-licensed and inspectable.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── HOW IT WORKS ──────────────────────────────── -->
+    <section class="section alt">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <div class="sec-kicker">How it works</div>
+          <h2>One intent in. Verified work out.</h2>
+          <p>Describe the outcome you want. The harness does the reasoning, calls its plugins, and reports what it shipped.</p>
+        </div>
+        <div class="steps reveal">
+          <div class="step">
+            <div class="n">1</div>
+            <div><h4>You state the intent</h4><p>A plain-English task — "write a pitch for this repo", "refactor X and prove it still works". No schema, no ceremony.</p></div>
+          </div>
+          <div class="step">
+            <div class="n">2</div>
+            <div><h4>The loop interrogates &amp; contracts</h4><p>It clarifies goals, non-goals, assumptions and risks, and writes a success contract it will hold itself to.</p></div>
+          </div>
+          <div class="step">
+            <div class="n">3</div>
+            <div><h4>Plugins do the execution</h4><p>Reads, writes, runs commands, searches, executes code — each scoped to the phase that needs it, with hard timeouts and sandboxing.</p></div>
+          </div>
+          <div class="step">
+            <div class="n">4</div>
+            <div><h4>Finish verifies — or loops again</h4><p>The Finish phase checks the contract. If the work isn't done, the loop restarts with everything it learned. When it is, you get the result and the artifacts.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FOUR PHASES ───────────────────────────────── -->
+    <section class="section" id="phases">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <div class="sec-kicker">The four phases</div>
+          <h2>Every cycle is the same four moves.</h2>
+        </div>
+        <div class="phase-row">
+          <div class="phase reveal">
+            <div class="num">01</div>
+            <div>
+              <h3>Interrogate</h3>
+              <p>Question the task. Pull in context — files, web, memory — and surface what's ambiguous, missing, or at risk before committing.</p>
+              <span class="tag">phases: all · goal: understand</span>
+            </div>
+          </div>
+          <div class="phase reveal">
+            <div class="num">02</div>
+            <div>
+              <h3>Contract</h3>
+              <p>Turn understanding into a commitment: concrete goals, non-goals, assumptions, and a measurable success criteria the loop will be judged by.</p>
+              <span class="tag">produces: contract</span>
+            </div>
+          </div>
+          <div class="phase reveal">
+            <div class="num">03</div>
+            <div>
+              <h3>Execute</h3>
+              <p>Do the work. Plugins act on the world — read, write, run, search, execute — with timeouts, sandboxing, and structured outputs.</p>
+              <span class="tag">produces: artifacts</span>
+            </div>
+          </div>
+          <div class="phase reveal">
+            <div class="num">04</div>
+            <div>
+              <h3>Finish</h3>
+              <p>Verify the contract was actually met. If yes, stop and report. If no, the loop goes back to Interrogate with everything it knows.</p>
+              <span class="tag">produces: verdict</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── ARCHITECTURE ──────────────────────────────── -->
+    <section class="section alt" id="architecture">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <div class="sec-kicker">Architecture</div>
+          <h2>A small, honest stack.</h2>
+          <p>TypeScript core on the Bun runtime, a thin web control deck, and a Rust workspace for the performance-critical paths.</p>
+        </div>
+        <div class="arch reveal">
+          <div class="arch-box">
+            <div class="head"><span class="dot" style="background:#5eead4"></span><h4>Web control deck</h4><span class="mono">Bun.serve · assets/</span></div>
+            <p>Chat with the agent, manage plugins, watch runs — one local server, plain HTML/CSS/JS, no framework.</p>
+          </div>
+          <div class="arch-arrow">↓</div>
+          <div class="arch-box">
+            <div class="head"><span class="dot" style="background:#a78bfa"></span><h4>Harness facade &amp; finish-first loop</h4><span class="mono">src/core</span></div>
+            <p>The loop, the plugin registry, the provider abstraction, and the event stream that powers the UI.</p>
+          </div>
+          <div class="arch-arrow">↓</div>
+          <div class="arch-box">
+            <div class="head"><span class="dot" style="background:#fbbf24"></span><h4>Plugins</h4><span class="mono">src/plugins</span></div>
+            <p>Filesystem, shell, memory, web search, code executor — each scoped to the phases it serves, with hard limits.</p>
+          </div>
+          <div class="arch-arrow">↓</div>
+          <div class="arch-box">
+            <div class="head"><span class="dot" style="background:#34d399"></span><h4>Rust workspace</h4><span class="mono">crates/</span></div>
+            <p>Core engine, agents, plugins, CLI and web crates for the parts that benefit from native speed and a typed systems layer.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-2" style="margin-top:24px">
+          <div class="code reveal">
+            <div class="bar"><i></i><i></i><i></i><span class="t">run a finish-first task</span></div>
+            <pre><span class="c"># from the repo root</span>
+<span class="p">$</span> bun run dev
+<span class="p">$</span> <span class="c"># → http://127.0.0.1:4321/dashboard</span>
+
+<span class="c"># or straight from the CLI</span>
+<span class="p">$</span> rh run <span class="s">"summarize this repo into a one-line pitch"</span></pre>
+          </div>
+          <div class="code reveal">
+            <div class="bar"><i></i><i></i><i></i><span class="t">bring your own model</span></div>
+            <pre><span class="c"># .env</span>
+<span class="k">RHA_API_KEY</span>=<span class="s">sk-...</span>
+<span class="k">RHA_BASE_URL</span>=<span class="s">https://api.openai.com/v1</span>
+<span class="k">RHA_MODEL</span>=<span class="s">gpt-4o-mini</span>
+
+<span class="c"># leave unset → demo mode</span>
+<span class="c"># (deterministic scaffold, no calls out)</span></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── FEATURES ──────────────────────────────────── -->
+    <section class="section">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <div class="sec-kicker">Features</div>
+          <h2>Built to be useful, not just demo-able.</h2>
+        </div>
+        <div class="grid grid-3">
+          <div class="card reveal"><h3>🔁 Self-verifying loop</h3><p>A Finish phase that checks the work before stopping — the difference between "I did it" and "it's done".</p></div>
+          <div class="card reveal"><h3>🧩 Swappable plugins</h3><p>Toggle capabilities on/off in the UI. Each plugin declares which phases it can act in.</p></div>
+          <div class="card reveal"><h3>🛡️ Bounded execution</h3><p>Hard timeouts, size caps, and path-traversal guards on every plugin that touches the system.</p></div>
+          <div class="card reveal"><h3>💾 Durable memory</h3><p>An in-process key/value store (with optional JSON persistence) shared across phases and runs.</p></div>
+          <div class="card reveal"><h3>🌐 Local web deck</h3><p>A single-command local UI for chatting, running tasks, managing plugins, and inspecting runs.</p></div>
+          <div class="card reveal"><h3>🔌 Open by default</h3><p>MIT-licensed, provider-agnostic, and structured so your own plugins and agents slot in cleanly.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── USE CASES ─────────────────────────────────── -->
+    <section class="section alt" id="use-cases">
+      <div class="wrap">
+        <div class="sec-head reveal">
+          <div class="sec-kicker">Use cases</div>
+          <h2>Where finish-first pays off.</h2>
+        </div>
+        <div class="uses">
+          <div class="use reveal"><div class="emoji">📄</div><h4>Docs &amp; READMEs</h4><p>Turn a messy repo into accurate, verified documentation.</p></div>
+          <div class="use reveal"><div class="emoji">🧪</div><h4>Refactors</h4><p>Rewrite code, then run the tests in the same loop to prove it holds.</p></div>
+          <div class="use reveal"><div class="emoji">🔍</div><h4>Research</h4><p>Interrogate a question, gather sources, and finish with a sourced summary.</p></div>
+          <div class="use reveal"><div class="emoji">🚀</div><h4>Scaffolds</h4><p>Scaffold a project and verify it actually builds and runs.</p></div>
+          <div class="use reveal"><div class="emoji">🧮</div><h4>Analysis</h4><p>Compute over local data with bounded, reproducible execution.</p></div>
+          <div class="use reveal"><div class="emoji">🧩</div><h4>Automation</h4><p>Composable plugins that each own a phase — easy to extend and audit.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CTA ───────────────────────────────────────── -->
+    <section class="cta">
+      <div class="wrap">
+        <h2 class="reveal">Ship the first thing that actually works.</h2>
+        <p class="reveal">One command. Local, open, and done when it's done — not when it stops talking.</p>
+        <a class="btn btn-primary btn-lg reveal" href="/dashboard">Open the control deck →</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── FOOTER ──────────────────────────────────────── -->
+  <footer class="foot">
+    <div class="wrap foot-inner">
+      <span>rHarness · Finish First. · MIT</span>
+      <span>
+        <a href="/dashboard">Control deck</a> ·
+        <a href="#what">What it is</a> ·
+        <a href="#architecture">Architecture</a>
+      </span>
+    </div>
+  </footer>
+
+  <script>
+    // Reveal-on-scroll
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+    }, { threshold: 0.12 });
+    document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+  </script>
+</body>
+</html>

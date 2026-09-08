@@ -42,37 +42,53 @@ export interface LocalModelProfile {
   notes?: string;
 }
 
-/** Built-in profiles. Add GGUF / NVFP4 ones the same way. */
+/**
+ * Built-in profiles for this DGX Spark box.
+ *
+ * These point at the two EXL3 checkpoints in ~/models plus the live Ollama
+ * model. EXL3 needs a dedicated runtime — GLM-5.3-TR3 uses the 0xSero
+ * rank-stacked custom loader (not stock vLLM), Qwen3.8-Next EXL3 uses an
+ * ExLlamaV3 `tabbyapi` build. The profile's `start`/`stop` are shell commands;
+ * point them at whatever launcher you actually use (docker run, a repo script,
+ * …). A profile with no `start` is fine — launch the server yourself and
+ * rHarness just talks to `base_url`.
+ */
 export const DEFAULT_PROFILES: LocalModelProfile[] = [
   {
     id: "glm53-exl3-spark",
-    name: "GLM-5.3-Flash EXL3 2.0bpw (single DGX Spark)",
+    name: "GLM-5.3-Flash EXL3-TR3 2.0bpw (single DGX Spark)",
     format: "exl3",
     base_url: "http://127.0.0.1:18080/v1",
     model: "glm-5.3-flash-exl3-k2-single-spark",
-    start: "./runtime/spark/start-rank-stacked-tp1.sh",
-    stop: "./stop.sh",
+    cwd: "/home/antarikshkarmakar/models/GLM-5.3-Flash-EXL3-TR3",
+    start:
+      "docker run --rm -d --name rh-glm53 --gpus all -p 18080:8000 " +
+      "ghcr.io/0xsero/glm53-flash-exl3-k2-rankstacked-tp1:latest",
+    stop: "docker rm -f rh-glm53 || true",
     notes:
-      "0xSero single-Spark recipe. Set `cwd` to the recipe checkout; ensure " +
-      "weights are downloaded and the image pulled before `start`.",
+      "Custom EXL3 K2 loader (rank_stacked_tp:4) — needs the 0xSero image, " +
+      "not stock vLLM. Adjust `start`/`stop` to your actual launcher.",
   },
   {
-    id: "glm53-exl3-2spark",
-    name: "GLM-5.3-Flash EXL3 4bpw (2× DGX Spark)",
+    id: "qwen38-exl3",
+    name: "Qwen3.8-Flash-Next EXL3 3.0bpw (DGX Spark)",
     format: "exl3",
-    base_url: "http://127.0.0.1:8888/v1",
-    model: "GLM-5.3-Flash-EXL3",
-    start: "./start.sh",
-    stop: "./stop.sh",
-    notes: "MiaAI-Lab 2-Spark recipe over CX7. Set `cwd` to the recipe checkout.",
+    base_url: "http://127.0.0.1:18081/v1",
+    model: "qwen3.8-flash-next-exl3",
+    cwd: "/home/antarikshkarmakar/models/Qwen3.8-Flash-Next-EXL3",
+    start: "tabbyapi --model . --port 18081",
+    stop: "pkill -f tabbyapi || true",
+    notes:
+      "Standard EXL3 3.05bpw — serve with an ExLlamaV3 `tabbyapi` build " +
+      "(the local eugr/spark-vllm image has no EXL3 support).",
   },
   {
-    id: "gguf-ollama",
-    name: "GGUF via Ollama /v1",
+    id: "qwen38-ollama",
+    name: "Qwen3.8-27B via Ollama (live on GPU)",
     format: "gguf",
     base_url: "http://127.0.0.1:11434/v1",
-    model: "llama3",
-    notes: "Ollama exposes an OpenAI-compatible /v1. Replace `model` with your Ollama tag.",
+    model: "qwen3.8:27b",
+    notes: "Ollama /v1 is already running on this box. `ollama list` for tags.",
   },
 ];
 

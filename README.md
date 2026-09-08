@@ -165,13 +165,20 @@ rHarness is built to drive a **locally-served** model through its OpenAI-compati
 Any server that speaks `/v1/chat/completions` works — vLLM (EXL3 / NVFP4), Ollama / llama.cpp
 (GGUF), tabbyAPI, LM Studio, and so on. No custom API is required.
 
-Three profiles ship out of the box (see `src/core/localmodel.ts`):
+Three profiles ship out of the box, matching the checkpoints in `~/models` (see
+`src/core/localmodel.ts`):
 
-| id                 | recipe                                  | endpoint                       | model id                             |
-| ------------------ | --------------------------------------- | ------------------------------ | ------------------------------------ |
-| `glm53-exl3-spark` | [0xSero single-Spark 2.0bpw](https://github.com/0xSero/GLM-5.3-Flash-EXL3-2bpw-DGX-Spark) | `127.0.0.1:18080/v1` | `glm-5.3-flash-exl3-k2-single-spark` |
-| `glm53-exl3-2spark`| [MiaAI-Lab 2× Spark](https://github.com/MiaAI-Lab/GLM-5.3-Flash-EXL3-2x-DGX-Sparks) | `127.0.0.1:8888/v1`  | `GLM-5.3-Flash-EXL3`                |
-| `gguf-ollama`      | Ollama `/v1`                            | `127.0.0.1:11434/v1`           | *(your Ollama tag)*                  |
+| id                 | model                                        | endpoint                | model id (served)                    |
+| ------------------ | -------------------------------------------- | ----------------------- | ------------------------------------ |
+| `glm53-exl3-spark` | GLM-5.3-Flash EXL3-TR3 2.0bpw (custom loader) | `127.0.0.1:18080/v1`  | `glm-5.3-flash-exl3-k2-single-spark` |
+| `qwen38-exl3`      | Qwen3.8-Flash-Next EXL3 3.0bpw               | `127.0.0.1:18081/v1`    | `qwen3.8-flash-next-exl3`            |
+| `qwen38-ollama`    | Qwen3.8-27B via Ollama (live)                | `127.0.0.1:11434/v1`    | `qwen3.8:27b`                        |
+
+> EXL3 is **not** served by stock vLLM. The GLM-5.3-TR3 checkpoint uses the 0xSero
+> rank-stacked custom loader (image `ghcr.io/0xsero/glm53-flash-exl3-k2-rankstacked-tp1`);
+> the Qwen3.8-Next EXL3 checkpoint uses an ExLlamaV3 `tabbyapi` build. Edit a profile's
+> `start`/`stop` to point at whichever launcher you actually use, or set no `start` and
+> launch the server yourself.
 
 ### Manage a local server from the CLI
 

@@ -55,6 +55,23 @@ export function defaultConfig(): HarnessConfig {
           ? process.env.RHA_ENABLE_THINKING === "1" || process.env.RHA_ENABLE_THINKING.toLowerCase() === "true"
           : undefined,
       reasoning_effort: (process.env.RHA_REASONING_EFFORT as "low" | "high" | undefined) || undefined,
+      top_p: process.env.RHA_TOP_P ? Number(process.env.RHA_TOP_P) : undefined,
+      top_k: process.env.RHA_TOP_K ? Number(process.env.RHA_TOP_K) : undefined,
+      system_prompt: process.env.RHA_SYSTEM_PROMPT || undefined,
+      max_context_length: process.env.RHA_MAX_CONTEXT ? Number(process.env.RHA_MAX_CONTEXT) : undefined,
+      gpu_offload_layers:
+        process.env.RHA_GPU_OFFLOAD !== undefined && process.env.RHA_GPU_OFFLOAD !== ""
+          ? Number(process.env.RHA_GPU_OFFLOAD)
+          : undefined,
+      cpu_threads: process.env.RHA_CPU_THREADS ? Number(process.env.RHA_CPU_THREADS) : undefined,
+      flash_attention:
+        process.env.RHA_FLASH_ATTENTION === "true" || process.env.RHA_FLASH_ATTENTION === "1"
+          ? true
+          : undefined,
+      response_format:
+        process.env.RHA_RESPONSE_FORMAT === "json_object"
+          ? ({ type: "json_object" } as const)
+          : undefined,
     },
   };
 }

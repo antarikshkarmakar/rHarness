@@ -73,6 +73,13 @@ export function buildProvider(config?: Partial<ProviderConfig>): Provider {
   const extra_body = config?.extra_body;
   const reasoning_effort = config?.reasoning_effort;
   const enable_thinking = config?.enable_thinking;
+  const top_p = config?.top_p;
+  const top_k = config?.top_k;
+  const max_context_length = config?.max_context_length;
+  const gpu_offload_layers = config?.gpu_offload_layers;
+  const cpu_threads = config?.cpu_threads;
+  const flash_attention = config?.flash_attention;
+  const response_format = config?.response_format;
 
   // A local/unauthenticated endpoint (vLLM, tabbyAPI, Ollama) has no key.
   // If a base_url points at a local host and no key is configured, we still
@@ -91,6 +98,13 @@ export function buildProvider(config?: Partial<ProviderConfig>): Provider {
     extra_body,
     reasoning_effort,
     enable_thinking,
+    top_p,
+    top_k,
+    max_context_length,
+    gpu_offload_layers,
+    cpu_threads,
+    flash_attention,
+    response_format,
   });
 }
 
@@ -142,6 +156,13 @@ interface OpenAICompatibleOptions {
   reasoning_effort?: "low" | "high";
   /** GLM-5.3-style thinking toggle → `chat_template_kwargs.enable_thinking`. */
   enable_thinking?: boolean;
+  top_p?: number;
+  top_k?: number;
+  max_context_length?: number;
+  gpu_offload_layers?: number;
+  cpu_threads?: number;
+  flash_attention?: boolean;
+  response_format?: { type: "json_object" } | { type: "json_schema"; json_schema: Record<string, unknown> };
 }
 
 /**
@@ -179,6 +200,14 @@ function buildRequestBody(
     ...((opts.extra_body?.chat_template_kwargs as Record<string, unknown>) ?? {}),
   };
   if (enableThinking !== undefined) mergedChatTemplate.enable_thinking = enableThinking;
+  // Inference tuning — forwarded as top-level fields; servers that don't support them ignore them.
+  if (opts.top_p !== undefined) body.top_p = opts.top_p;
+  if (opts.top_k !== undefined) body.top_k = opts.top_k;
+  if (opts.max_context_length !== undefined) body.max_model_len = opts.max_context_length;
+  if (opts.gpu_offload_layers !== undefined) body.n_gpu_layers = opts.gpu_offload_layers;
+  if (opts.cpu_threads !== undefined) body.n_threads = opts.cpu_threads;
+  if (opts.flash_attention !== undefined) body.use_flash_attn = opts.flash_attention;
+  if (opts.response_format !== undefined) body.response_format = opts.response_format;
   const extraBody = { ...(opts.extra_body ?? {}) };
   if (Object.keys(mergedChatTemplate).length > 0) extraBody.chat_template_kwargs = mergedChatTemplate;
   Object.assign(body, extraBody);

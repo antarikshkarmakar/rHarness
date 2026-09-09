@@ -36,15 +36,18 @@ export async function newContext(
   config: HarnessConfig,
   opts?: RunOptions,
 ): Promise<PhaseContext> {
+  const systemPrompt =
+    config.provider?.system_prompt ??
+    ("You are rHarness, a finish-first autonomous agent. " +
+      "You work in four phases: Interrogate, Contract, Execute, Finish. " +
+      "Always aim to actually finish the task, not merely talk about it.");
+
   const ctx: PhaseContext = {
     task,
     conversation: [
       {
         role: "system",
-        content:
-          "You are rHarness, a finish-first autonomous agent. " +
-          "You work in four phases: Interrogate, Contract, Execute, Finish. " +
-          "Always aim to actually finish the task, not merely talk about it.",
+        content: systemPrompt,
         timestamp: nowIso(),
       },
       {

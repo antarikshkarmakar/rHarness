@@ -66,6 +66,7 @@ rHarness exposes a `rh` command (wired as the `rh` bin in `package.json`, backed
 ```bash
 rh serve [--port 4321] [--host 127.0.0.1]   # start the local web app
 rh run <task>                                # run the finish-first loop once and print the result
+rh run --local <profile-id> <task>           # run the loop using a local-model profile
 rh plugins                                   # list built-in plugins and their capabilities
 rh config                                    # print the effective configuration
 rh init                                      # write a sample rharness.json
@@ -74,6 +75,7 @@ rh local status <id>                         # probe a local server's /models
 rh local start  <id> [--no-launch]           # start + wait for a local server
 rh local stop   <id>                         # stop a local server
 rh local test   <id>                         # send a test completion
+rh local use  <id>                           # print env exports to point the harness at a profile
 rh --help                                    # show help
 ```
 
@@ -188,10 +190,27 @@ rh local status <id>                # probe <id>/models and report running / lat
 rh local start  <id> [--no-launch]  # run the profile's `start` cmd, then poll until healthy
 rh local stop   <id>                # run the profile's `stop` cmd
 rh local test   <id>                # send a tiny completion and show the reply
+rh local use    <id>                # print RHA_BASE_URL / RHA_MODEL (+ GLM thinking knobs)
 ```
 
 Set `cwd` (and optionally `env`) on a profile to point at your recipe checkout. A profile with no
 `start` command is fine — launch the server yourself and rHarness simply talks to the endpoint.
+
+### One-shot: run a task against a local profile
+
+Skip the manual `export` step entirely:
+
+```
+rh local start  glm53-exl3-spark            # bring the server up
+rh run --local glm53-exl3-spark "Refactor the auth module and add tests"
+```
+
+Or use the bundled script that handles the probe → start → wait → run flow in one command:
+
+```
+scripts/local-model.sh --list                                        # list profiles
+scripts/local-model.sh glm53-exl3-spark "Refactor the auth module and add tests"
+```
 
 ### Point the harness at a local model
 
@@ -214,6 +233,22 @@ body. rHarness reads `reasoning` automatically (falling back to `content`) and f
 | `RHA_ENABLE_THINKING` | `true`/`false` → `chat_template_kwargs.enable_thinking` |
 | `RHA_REASONING_EFFORT`| `low` / `high` → `reasoning_effort`                |
 | `RHA_MAX_TOKENS`     | keep ≥ `32768` while thinking is on                 |
+
+### Sampling & inference tuning
+
+These knobs are forwarded to the local server. Servers that don't support a given field simply
+ignore it, so it's safe to set them on any OpenAI-compatible endpoint.
+
+| Variable             | Default | Purpose                                              |
+| -------------------- | ------- | ---------------------------------------------------- |
+| `RHA_TOP_P`          | *(unset)* | `top_p` — cumulative probability threshold (0–1)  |
+| `RHA_TOP_K`          | *(unset)* | `top_k` — top-K candidate tokens (EXL3 / llama.cpp) |
+| `RHA_SYSTEM_PROMPT`  | *(built-in)* | system / role prompt applied to every conversation |
+| `RHA_MAX_CONTEXT`    | *(unset)* | `max_model_len` — max context window (input+output) tokens |
+| `RHA_GPU_OFFLOAD`    | *(unset)* | `n_gpu_layers` — GPU-offloaded layers (`-1` = all) |
+| `RHA_CPU_THREADS`    | *(unset)* | `n_threads` — CPU thread pool size                  |
+| `RHA_FLASH_ATTENTION`| *(unset)* | `use_flash_attn` — `true` to enable Flash Attention |
+| `RHA_RESPONSE_FORMAT`| *(unset)* | `json_object` — force structured JSON output        |
 
 ### Web API
 
@@ -243,6 +278,14 @@ deterministic offline `DemoProvider`.
 | `RHA_MAX_TOKENS`     | `32768`                                   | Max completion tokens                |
 | `RHA_ENABLE_THINKING`| *(unset)*                                 | `chat_template_kwargs.enable_thinking` (GLM-5.3) |
 | `RHA_REASONING_EFFORT`| *(unset)*                                 | `low` / `high` → `reasoning_effort` (GLM-5.3) |
+| `RHA_TOP_P`          | *(unset)*                                 | `top_p` — cumulative probability threshold     |
+| `RHA_TOP_K`          | *(unset)*                                 | `top_k` — top-K candidate tokens               |
+| `RHA_SYSTEM_PROMPT`  | *(built-in)*                              | System prompt / role definition                |
+| `RHA_MAX_CONTEXT`    | *(unset)*                                 | `max_model_len` — max context window (tokens)  |
+| `RHA_GPU_OFFLOAD`    | *(unset)*                                 | `n_gpu_layers` — GPU-offloaded layers          |
+| `RHA_CPU_THREADS`    | *(unset)*                                 | `n_threads` — CPU thread pool size             |
+| `RHA_FLASH_ATTENTION`| *(unset)*                                 | `use_flash_attn` — enable Flash Attention      |
+| `RHA_RESPONSE_FORMAT`| *(unset)*                                 | `json_object` — force JSON output              |
 | `RHA_PORT`           | `4321`                                    | Web server port                      |
 | `RHA_HOST`           | `127.0.0.1`                               | Web server host                      |
 | `RHA_MEMORY_FILE`    | `~/.rharness/memory.json`                 | Persistent store for the memory plugin |

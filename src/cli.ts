@@ -36,10 +36,14 @@ Usage:
   rh local start <profile-id> [--no-launch]
   rh local stop <profile-id>
   rh local test <profile-id>
+  rh local use <profile-id>           Print env exports to point the harness at a profile
+  rh run [--local <profile-id>] <task>  Run the finish-first loop (optionally using a local profile)
   rh --help
 
 Environment:
   RHA_PORT, RHA_HOST, RHA_API_KEY, RHA_BASE_URL, RHA_MODEL, RHA_MEMORY_FILE
+  RHA_TOP_P, RHA_TOP_K, RHA_SYSTEM_PROMPT, RHA_MAX_CONTEXT,
+  RHA_GPU_OFFLOAD, RHA_CPU_THREADS, RHA_FLASH_ATTENTION, RHA_RESPONSE_FORMAT
 `);
 }
 
@@ -59,12 +63,40 @@ async function main(): Promise<void> {
   }
 
   if (cmd === "run") {
-    const task = argv.slice(1).join(" ").trim();
+    // Parse --local <profile-id> (position-independent)
+    const localIdx = argv.indexOf("--local");
+    let localId: string | undefined;
+    let task: string;
+    if (localIdx !== -1) {
+      localId = argv[localIdx + 1];
+      const taskArgs = [...argv.slice(1)];
+      taskArgs.splice(localIdx - 1, 2);
+      task = taskArgs.join(" ").trim();
+    } else {
+      task = argv.slice(1).join(" ").trim();
+    }
     if (!task) {
-      console.error("Usage: rh run <task>");
+      console.error("Usage: rh run [--local <profile-id>] <task>");
       process.exit(1);
     }
-    const harness = createHarness({ config: defaultConfig() });
+
+    const base = defaultConfig();
+    const providerOverride: Partial<typeof base.provider> = {};
+    if (localId) {
+      const localMgr = createLocalModelManager();
+      const profile = localMgr.get(localId);
+      if (!profile) {
+        console.error(`Unknown profile "${localId}". Run "rh local list" to see options.`);
+        process.exit(1);
+      }
+      providerOverride.base_url = profile.base_url;
+      providerOverride.model = profile.model;
+      console.log(`Using local profile: ${profile.name}`);
+    }
+
+    const harness = createHarness({
+      config: { ...base, provider: { ...base.provider, ...providerOverride } },
+    });
     registerBuiltinPlugins(harness.registry);
     const run = await harness.runTask(task);
     console.log(JSON.stringify(run, null, 2));
@@ -164,6 +196,37 @@ async function main(): Promise<void> {
         console.log(`✗ ${r.error ?? "test failed"}`);
         process.exit(1);
       }
+      return;
+    }
+
+    if (sub === "use") {
+      const profile = mgr.get(id);
+      if (!profile) {
+        console.error(`Unknown profile "${id}". Run "rh local list" to see options.`);
+        process.exit(1);
+      }
+      const lines = [
+        `# rHarness — point the harness at "${profile.name}"`,
+        `export RHA_BASE_URL=${profile.base_url}`,
+        `export RHA_MODEL=${profile.model}`,
+      ];
+      if (profile.format === "exl3") {
+        lines.push(
+          `# GLM-5.3 / EXL3 thinking knobs (uncomment to enable):`,
+          `# export RHA_ENABLE_THINKING=true`,
+          `# export RHA_REASONING_EFFORT=high`,
+          `# export RHA_MAX_TOKENS=32768`,
+        );
+      }
+      lines.push(
+        ``,
+        `# Sampling / inference tuning (optional):`,
+        `# export RHA_TOP_P=0.9`,
+        `# export RHA_TOP_K=40`,
+        `# export RHA_SYSTEM_PROMPT="You are an expert coding assistant."`,
+        `# export RHA_FLASH_ATTENTION=true`,
+      );
+      console.log(lines.join("\n"));
       return;
     }
 

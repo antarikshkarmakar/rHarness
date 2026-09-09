@@ -60,27 +60,49 @@ export const DEFAULT_PROFILES: LocalModelProfile[] = [
     format: "exl3",
     base_url: "http://127.0.0.1:18080/v1",
     model: "glm-5.3-flash-exl3-k2-single-spark",
-    cwd: "/home/antarikshkarmakar/models/GLM-5.3-Flash-EXL3-TR3",
+    cwd: "/home/antarikshkarmakar/models/glm53-runtime",
+    env: {
+      GLM53_MODEL_ROOT: "/home/antarikshkarmakar/models/GLM-5.3-Flash-EXL3-TR3",
+      GLM53_IMAGE:
+        "ghcr.io/0xsero/glm53-flash-exl3-k2-rankstacked-tp1@sha256:e60a824db7615ead2ae60b4b39b3a9e11e14700bec49901eae7b1e3fb3620d7a",
+    },
     start:
-      "docker run --rm -d --name rh-glm53 --gpus all -p 18080:8000 " +
-      "ghcr.io/0xsero/glm53-flash-exl3-k2-rankstacked-tp1:latest",
-    stop: "docker rm -f rh-glm53 || true",
+      "env GLM53_MODEL_ROOT=/home/antarikshkarmakar/models/GLM-5.3-Flash-EXL3-TR3 " +
+      "GLM53_IMAGE=ghcr.io/0xsero/glm53-flash-exl3-k2-rankstacked-tp1@sha256:e60a824db7615ead2ae60b4b39b3a9e11e14700bec49901eae7b1e3fb3620d7a " +
+      "/home/antarikshkarmakar/models/glm53-runtime/runtime/spark/start-rank-stacked-tp1.sh",
+    stop: "docker rm -f glm53-flash-exact2-tp1 || true",
     notes:
-      "Custom EXL3 K2 loader (rank_stacked_tp:4) — needs the 0xSero image, " +
-      "not stock vLLM. Adjust `start`/`stop` to your actual launcher.",
+      "Custom EXL3 K2 loader (rank_stacked_tp:4) via the pinned 0xSero image + " +
+      "start-rank-stacked-tp1.sh. The launcher refuses to start while any foreign " +
+      "CUDA process is resident — `ollama stop <model>` first. Foreground (exec " +
+      "docker run), so run `rh local start glm53-exl3-spark --no-launch` in a " +
+      "detached/background terminal; weight load is several minutes (~111 GB).",
   },
   {
     id: "qwen38-exl3",
-    name: "Qwen3.8-Flash-Next EXL3 3.0bpw (DGX Spark)",
+    name: "Qwen3.8-Flash-Next EXL3 3.05bpw (DGX Spark)",
     format: "exl3",
     base_url: "http://127.0.0.1:18081/v1",
     model: "qwen3.8-flash-next-exl3",
     cwd: "/home/antarikshkarmakar/models/Qwen3.8-Flash-Next-EXL3",
-    start: "tabbyapi --model . --port 18081",
-    stop: "pkill -f tabbyapi || true",
+    start:
+      "docker run --rm -d --name rh-qwen38 --gpus all --ipc host --network host " +
+      "-v /home/antarikshkarmakar/models/Qwen3.8-Flash-Next-EXL3:/model:ro " +
+      "-e HF_HUB_OFFLINE=1 -e VLLM_PLE_CPU_OFFLOAD=1 " +
+      "vllm/vllm-openai:qwen38-flash-next /model " +
+      "--served-model-name qwen3.8-flash-next-exl3 --host 127.0.0.1 --port 18081 " +
+      "--tensor-parallel-size 1 --dtype bfloat16 --kv-cache-dtype fp8 " +
+      "--gpu-memory-utilization 0.90 --max-model-len 65536 --max-num-seqs 256 " +
+      "--enable-prefix-caching --no-enable-flashinfer-autotune " +
+      "--enable-auto-tool-choice --tool-call-parser qwen3_xml --reasoning-parser qwen3 " +
+      "--trust-remote-code",
+    stop: "docker rm -f rh-qwen38 || true",
     notes:
-      "Standard EXL3 3.05bpw — serve with an ExLlamaV3 `tabbyapi` build " +
-      "(the local eugr/spark-vllm image has no EXL3 support).",
+      "Qwen4 preview hybrid arch (GDN+QSA + 51B N-gram + MTP), EXL3 3.05bpw in " +
+      "safetensors. Served by the dedicated vllm/vllm-openai:qwen38-flash-next image " +
+      "(arm64). Single GB10: TP1, N-gram table offloaded to host via " +
+      "VLLM_PLE_CPU_OFFLOAD. Reasoning knobs: enable_thinking / preserve_thinking / " +
+      "reasoning_effort (xhigh|medium|low). 80 GB weights fit the 121 GiB unified pool.",
   },
   {
     id: "qwen38-ollama",

@@ -173,6 +173,22 @@ export interface ProviderConfig {
   enable_thinking?: boolean;
   /** GLM-5.3: `low` | `high` (or unset = Max). Sent as top-level `reasoning_effort`. */
   reasoning_effort?: "low" | "high";
+  /** Sampling: restrict token selection to top cumulative probability (0–1). Forwarded as `top_p`. */
+  top_p?: number;
+  /** Sampling: restrict to top K candidate tokens (EXL3 / llama.cpp). Forwarded as `top_k`. */
+  top_k?: number;
+  /** System prompt / role definition applied to every conversation. */
+  system_prompt?: string;
+  /** Maximum context window in tokens (input + output). Forwarded as `max_model_len`. */
+  max_context_length?: number;
+  /** Number of layers offloaded to GPU (-1 = all layers). Forwarded as `n_gpu_layers`. */
+  gpu_offload_layers?: number;
+  /** CPU thread pool size for non-GPU work. Forwarded as `n_threads`. */
+  cpu_threads?: number;
+  /** Enable Flash Attention for lower memory and faster inference. Forwarded as `use_flash_attn`. */
+  flash_attention?: boolean;
+  /** Force structured JSON output. `json_object` or `json_schema`. */
+  response_format?: { type: "json_object" } | { type: "json_schema"; json_schema: Record<string, unknown> };
 }
 
 export interface Harness {
